@@ -1,0 +1,154 @@
+{
+    "юбок женских": [
+        {
+            "node_id": "6936",
+            "total_contacts": 2,
+            "node_contacts": 2,
+            "node_contact_rate": 1.0,
+            "total_searches": 6,
+            "node_searches": 6,
+            "node_search_rate": 1.0,
+            "total_score": 26,
+            "node_score": 26,
+            "node_score_rate": 1.0
+        },
+        {
+            "node_id": "6946",
+            "total_contacts": 2,
+            "node_contacts": 1,
+            "node_contact_rate": 0.5,
+            "total_searches": 6,
+            "node_searches": 3,
+            "node_search_rate": 0.5,
+            "total_score": 26,
+            "node_score": 13,
+            "node_score_rate": 0.5
+        },
+        {
+            "node_id": "6949",
+            "total_contacts": 2,
+            "node_contacts": 1,
+            "node_contact_rate": 0.5,
+            "total_searches": 6,
+            "node_searches": 3,
+            "node_search_rate": 0.5,
+            "total_score": 26,
+            "node_score": 13,
+            "node_score_rate": 0.5
+        }
+    ],
+    "юбки женская": [
+        {
+            "node_id": "6936",
+            "total_contacts": 2,
+            "node_contacts": 2,
+            "node_contact_rate": 1.0,
+            "total_searches": 1,
+            "node_searches": 1,
+            "node_search_rate": 1.0,
+            "total_score": 21,
+            "node_score": 21,
+            "node_score_rate": 1.0
+        },
+        {
+            "node_id": "6946",
+            "total_contacts": 2,
+            "node_contacts": 2,
+            "node_contact_rate": 1.0,
+            "total_searches": 1,
+            "node_searches": 1,
+            "node_search_rate": 1.0,
+            "total_score": 21,
+            "node_score": 21,
+            "node_score_rate": 1.0
+        }
+    ],
+    "юбка женская": [
+        {
+            "node_id": "6936",
+            "total_contacts": 2,
+            "node_contacts": 2,
+            "node_contact_rate": 1.0,
+            "total_searches": 3,
+            "node_searches": 3,
+            "node_search_rate": 1.0,
+            "total_score": 23,
+            "node_score": 23,
+            "node_score_rate": 1.0
+        },
+        {
+            "node_id": "6946",
+            "total_contacts": 2,
+            "node_contacts": 2,
+            "node_contact_rate": 1.0,
+            "total_searches": 3,
+            "node_searches": 2,
+            "node_search_rate": 0.6667,
+            "total_score": 23,
+            "node_score": 22,
+            "node_score_rate": 0.9565
+        }
+    ],
+    "юбка джинсовая 44 46": [
+        {
+            "node_id": "6936",
+            "total_contacts": 210,
+            "node_contacts": 210,
+            "node_contact_rate": 1.0,
+            "total_searches": 136,
+            "node_searches": 136,
+            "node_search_rate": 1.0,
+            "total_score": 2236,
+            "node_score": 2236,
+            "node_score_rate": 1.0
+        },
+        {
+            "node_id": "6946",
+            "total_contacts": 210,
+            "node_contacts": 206,
+            "node_contact_rate": 0.981,
+            "total_searches": 136,
+            "node_searches": 112,
+            "node_search_rate": 0.8235,
+            "total_score": 2236,
+            "node_score": 2172,
+            "node_score_rate": 0.9714
+        },
+        {
+            "node_id": "6947",
+            "total_contacts": 210,
+            "node_contacts": 2,
+            "node_contact_rate": 0.0095,
+            "total_searches": 136,
+            "node_searches": 4,
+            "node_search_rate": 0.0294,
+            "total_score": 2236,
+            "node_score": 24,
+            "node_score_rate": 0.0107
+        },
+        {
+            "node_id": "6949",
+            "total_contacts": 210,
+            "node_contacts": 1,
+            "node_contact_rate": 0.0048,
+            "total_searches": 136,
+            "node_searches": 10,
+            "node_search_rate": 0.0735,
+            "total_score": 2236,
+            "node_score": 20,
+            "node_score_rate": 0.0089
+        },
+        {
+            "node_id": "6948",
+            "total_contacts": 210,
+            "node_contacts": 1,
+            "node_contact_rate": 0.0048,
+            "total_searches": 136,
+            "node_searches": 10,
+            "node_search_rate": 0.0735,
+            "total_score": 2236,
+            "node_score": 20,
+            "node_score_rate": 0.0089
+        }
+    ]
+}

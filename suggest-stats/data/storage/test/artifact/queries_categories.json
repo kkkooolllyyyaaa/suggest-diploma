@@ -1,0 +1,43 @@
+{
+    "юбок женских": [
+        {
+            "node_id": "6949",
+            "total_searches": 3,
+            "total_contacts": 1
+        },
+        {
+            "node_id": "6946",
+            "total_searches": 3,
+            "total_contacts": 1
+        }
+    ],
+    "юбка женская": [
+        {
+            "node_id": "6946",
+            "total_searches": 2,
+            "total_contacts": 2
+        }
+    ],
+    "юбка джинсовая 44 46": [
+        {
+            "node_id": "6949",
+            "total_searches": 10,
+            "total_contacts": 1
+        },
+        {
+            "node_id": "6948",
+            "total_searches": 10,
+            "total_contacts": 1
+        },
+        {
+            "node_id": "6947",
+            "total_searches": 4,
+            "total_contacts": 2
+        },
+        {
+            "node_id": "6946",
+            "total_searches": 112,
+            "total_contacts": 206
+        }
+    ]
+}

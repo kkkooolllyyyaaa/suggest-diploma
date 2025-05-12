@@ -1,0 +1,13 @@
+app.log
+
+data/misspell/data/*
+!data/misspell/data/test.txt
+
+data/misspell/models/*
+!data/misspell/alphabet.txt
+
+data/raw/*
+data/storage/*
+!data/storage/test
+!data/nodes.json.gz
+data/sample.tsv

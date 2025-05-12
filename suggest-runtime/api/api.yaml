@@ -1,0 +1,176 @@
+openapi: "3.0.2"
+info:
+  title: External suggest API
+  version: "1.0"
+
+servers:
+  - url: http://localhost:8080
+    description: local
+
+paths:
+  /v1/api/suggest:
+    post:
+      description: |
+        Request to get suggests by search query
+      tags:
+        - Suggest
+      parameters:
+        - name: userId
+          in: header
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              '$ref': '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: |
+            Request processed successfully, body contains search suggests
+          content:
+            application/json:
+              schema:
+                '$ref': '#/components/schemas/SuggestResponse'
+        '400':
+          description: Bad request
+        '500':
+          description: Internal server error
+
+  /v1/api/category/tree:
+    get:
+      description: |
+        Request to get suggests by search query
+      tags:
+        - Category
+      parameters:
+        - name: node
+          in: query
+          schema:
+            type: string
+        - name: userId
+          in: header
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: |
+            Request processed successfully, body contains nodes
+          content:
+            application/json:
+              schema:
+                '$ref': '#/components/schemas/CategoryTreeNodesResponse'
+        '400':
+          description: Bad request
+        '404':
+          description: Not Found
+        '500':
+          description: Internal server error
+
+  /v1/api/search:
+    post:
+      description: |
+        Request to acknowledge about search
+      tags:
+        - Search
+      parameters:
+        - name: userId
+          in: header
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              '$ref': '#/components/schemas/SearchRequest'
+      responses:
+        '204':
+          description: Request processed successfully
+        '400':
+          description: Bad request
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    SearchRequest:
+      type: object
+      properties:
+        query:
+          type: string
+      required:
+        - query
+
+    SuggestResponse:
+      type:
+        object
+      properties:
+        suggestId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SuggestItem'
+      required:
+        - suggestId
+        - items
+
+    SuggestItem:
+      type: object
+      properties:
+        title:
+          description: Title visible for user
+          type: string
+        query:
+          description: Text query for search engine
+          type: string
+        categoryId:
+          description: Category id for search engine
+          type: string
+        locationId:
+          description: Location id for search engine
+          type: string
+        icon:
+          $ref: '#/components/schemas/SuggestItemIcon'
+      required:
+        - title
+
+    SuggestItemIcon:
+      type: object
+      properties:
+        width:
+          type: integer
+        height:
+          type: integer
+        uri:
+          description: Image URI or image id for suggest item icon
+          type: string
+      required:
+        - width
+        - height
+        - uri
+
+
+    CategoryTreeNodesResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/CategoryTreeNode'
+
+    CategoryTreeNode:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        has_children:
+          type: boolean
+      required:
+        - id
+        - name
+        - has_children

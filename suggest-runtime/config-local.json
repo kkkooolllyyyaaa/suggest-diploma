@@ -1,0 +1,12 @@
+{
+  "server": {
+    "host": "localhost",
+    "port": 8080
+  },
+  "pprof": {
+    "enable": true
+  },
+  "redis": {
+    "host": "localhost:6379"
+  }
+}

@@ -39,7 +39,7 @@ func (h *Server) PostV1ApiSuggest(ctx echo.Context, params PostV1ApiSuggestParam
 	suggestItems := make([]SuggestItem, 0, len(indexItems))
 	for _, item := range indexItems {
 		toAdd := SuggestItem{
-			Title: string(item.Query),
+			Title: string(item.NormalizedQuery),
 		}
 		suggestItems = append(suggestItems, toAdd)
 	}

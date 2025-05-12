@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сервис поисковых подсказок</title>
+    <style>
+        /* main */
+        ul {
+            list-style-type: none;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .layout {
+            display: flex;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            height: 100%;
+            position: relative;
+        }
+
+        .categories {
+            width: calc(6 / 11 * 100vw - 40px);
+            max-width: 400px;
+            position: fixed;
+            left: 20px;
+            top: 20px;
+            bottom: 20px;
+            overflow-y: auto;
+            padding-right: 20px;
+        }
+
+        .main-content {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 20px;
+            width: 100%;
+            max-width: 600px;
+            height: fit-content;
+        }
+
+        /* search input */
+        .search-container {
+            width: 100%;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 16px;
+            border: 2px solid #c9c7c5;
+            border-radius: 8px;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        /* suggest */
+        .suggestions {
+            position: absolute;
+            width: 100%;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            display: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .suggestion-item {
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        /* category */
+        .category-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .category-item {
+            padding: 5px 0 5px 20px;
+            cursor: pointer;
+            color: #000;
+            position: relative;
+            word-break: break-word;
+        }
+
+        .category-children {
+            margin-left: 15px;
+            display: none;
+            border-left: 1px solid #ddd;
+            padding-left: 10px;
+        }
+
+        .category-expanded > .category-children {
+            display: block;
+        }
+
+        .highlight {
+            font-weight: bold;
+            color: #000;
+        }
+
+        .category-arrow {
+            position: absolute;
+            left: 5px;
+            top: 10px;
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #666;
+            transition: transform 0.2s ease;
+        }
+
+        .category-expanded > .category-arrow {
+            transform: rotate(90deg);
+        }
+
+        .category-has-children {
+            font-weight: bold;
+        }
+
+        /* notification */
+        .popup-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 15px;
+            width: 300px;
+            max-width: 90%;
+            z-index: 1000;
+            transform: translateX(150%);
+            transition: transform 0.3s ease-in-out;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .popup-notification.show {
+            transform: translateX(0);
+        }
+
+        .popup-close {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 20px;
+            cursor: pointer;
+            color: #888;
+        }
+
+        .popup-close:hover {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+<div class="layout">
+    <div class="categories">
+        <h3>Категории</h3>
+        <ul class="category-list" id="categoryList"></ul>
+    </div>
+
+    <div class="main-content">
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" class="search-input" autocomplete="off" placeholder="Поиск..." id="searchInput">
+                <div class="suggestions" id="suggestions"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="popupNotification" class="popup-notification">
+    <div class="popup-content">
+        <span class="popup-close">&times;</span>
+        <p id="popupMessage">Ваше сообщение здесь</p>
+    </div>
+</div>
+
+<script>
+    const USER_ID = '1'
+    const HOST = 'http://localhost:8080'
+
+    // При первоначальной загрузке страницы
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('searchInput');
+        const suggestionsContainer = document.getElementById('suggestions');
+        const categoryList = document.getElementById('categoryList');
+
+        // Загружаем дерево категорий при загрузке страницы
+        loadCategoriesTree();
+
+        function hideSuggest() {
+            suggestionsContainer.style.display = 'none';
+        }
+
+        // Получение поисковых подсказок при вводе в поисковую строку
+        searchInput.addEventListener('input', function (e) {
+            const query = e.target.value.trimStart();
+            // if (query.length === 0) {
+            //     hideSuggest()
+            //     return
+            // }
+            fetchSuggestions(e.target.value);
+        });
+
+        // Логирование запроса при нажатии кнопки Enter
+        searchInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                logHistoryQuery(this.value.trim())
+            }
+        });
+
+        // Скрытие поисковых подсказок при клике вне поисковой строки
+        document.addEventListener('click', function (e) {
+            if (e.target !== searchInput) {
+                hideSuggest()
+            }
+        })
+
+        function fetchSuggestions(query) {
+            fetch(`${HOST}/v1/api/suggest`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'userId': USER_ID,
+                },
+                body: JSON.stringify({query})
+            })
+                .then(response => response.json())
+                .then(data => {
+                    displaySuggestions(data.items, query);
+                })
+                .catch(error => {
+                    showPopup(`Got error for request: ${error}`, {type: 'error', duration: 3000})
+                });
+        }
+
+        function highlightSuggestion(query, suggestion) {
+            function escapeRegExp(string) {
+                return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            }
+
+            const userQueryTokens = query.split(/\s+/).filter(token => token.length > 0);
+            if (userQueryTokens.length === 0 || !suggestion) {
+                return suggestion;
+            }
+
+            let highlightedResult = suggestion;
+            userQueryTokens.forEach(token => {
+                const regex = new RegExp(`(${escapeRegExp(token)})`, 'gi');
+                highlightedResult = highlightedResult.replace(regex, '<span class="highlight">$1</span>');
+            });
+
+            return highlightedResult;
+        }
+
+        function displaySuggestions(items, query) {
+            if (!items || items.length === 0) {
+                hideSuggest()
+                return;
+            }
+
+            suggestionsContainer.innerHTML = '';
+
+            items.forEach(item => {
+                const suggestionItem = document.createElement('div');
+                suggestionItem.className = 'suggestion-item';
+
+                const queryLower = query.toLowerCase();
+                const titleLower = item.title.toLowerCase();
+
+                const text = document.createElement('div');
+                text.innerHTML = highlightSuggestion(queryLower, titleLower)
+                suggestionItem.appendChild(text);
+
+                suggestionItem.dataset.titleLower = titleLower;
+
+                // Обработчик клика по подсказке
+                suggestionItem.addEventListener('click', function () {
+                    searchInput.value = item.title;
+                    hideSuggest()
+                    logHistoryQuery(this.dataset.titleLower)
+                });
+
+                suggestionsContainer.appendChild(suggestionItem);
+            });
+
+            suggestionsContainer.style.display = 'block';
+        }
+
+        function logHistoryQuery(query) {
+            fetch(`${HOST}/v1/api/search`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'userId': USER_ID,
+                },
+                body: JSON.stringify({query})
+            })
+                .then(_ => {
+                    showPopup(`Запрос ${query} успешно добавлен в историю`)
+                })
+                .catch(error => {
+                    showPopup(`Got error for request: ${error}`, {type: 'error', duration: 3000})
+                });
+        }
+
+        // popup уведомление
+        function showPopup(message, options = {}) {
+            const popup = document.getElementById('popupNotification');
+            const messageEl = document.getElementById('popupMessage');
+            messageEl.textContent = message;
+
+            const settings = {
+                duration: 5000,
+                type: 'success',
+                ...options
+            };
+
+            const colors = {
+                success: '#4CAF50',
+                error: '#F44336',
+                warning: '#FF9800',
+                info: '#2196F3'
+            };
+
+            popup.style.borderLeftColor = colors[settings.type] || colors.success;
+
+            popup.classList.add('show');
+
+            document.querySelector('.popup-close').onclick = () => {
+                hidePopup();
+            };
+
+            if (settings.duration > 0) {
+                setTimeout(hidePopup, settings.duration);
+            }
+        }
+
+        function hidePopup() {
+            document.getElementById('popupNotification').classList.remove('show');
+        }
+
+        function loadCategoriesTree(parentId = null) {
+            let url = `${HOST}/v1/api/category/tree`;
+            if (parentId) {
+                url += `?node=${parentId}`;
+            }
+
+            fetch(url, {headers: {"userId": USER_ID}})
+                .then(response => response.json())
+                .then(data => {
+                    if (parentId) {
+                        updateCategoryChildren(parentId, data);
+                    } else {
+                        displayCategories(data);
+                    }
+                })
+                .catch(error => {
+                    showPopup(`Got error for request: ${error}`, {type: 'error', duration: 3000})
+                });
+        }
+
+        function displayCategories(categories) {
+            categoryList.innerHTML = '';
+
+            categories.forEach(category => {
+                const categoryItem = createCategoryElement(category);
+                categoryList.appendChild(categoryItem);
+            });
+        }
+
+        function updateCategoryChildren(parentId, children) {
+            const parentElement = document.querySelector(`.category-item[data-id="${parentId}"]`);
+            if (!parentElement) return;
+
+            let childrenContainer = parentElement.querySelector('.category-children');
+            if (!childrenContainer) {
+                childrenContainer = document.createElement('ul');
+                childrenContainer.className = 'category-children';
+                parentElement.appendChild(childrenContainer);
+            } else {
+                childrenContainer.innerHTML = '';
+            }
+
+            if (children.length === 0) {
+                const emptyItem = document.createElement('li');
+                emptyItem.className = 'category-item';
+                emptyItem.textContent = 'Нет подкатегорий';
+                childrenContainer.appendChild(emptyItem);
+                return;
+            }
+
+            children.forEach(category => {
+                const categoryItem = createCategoryElement(category);
+                childrenContainer.appendChild(categoryItem);
+            });
+
+            parentElement.classList.add('category-expanded');
+        }
+
+        function createCategoryElement(category) {
+            const li = document.createElement('li');
+            li.className = 'category-item';
+            li.setAttribute('data-id', category.id);
+
+            // Добавляем стрелочку, если есть дочерние элементы
+            if (category.has_children) {
+                const arrow = document.createElement('div');
+                arrow.className = 'category-arrow';
+                li.appendChild(arrow);
+                li.classList.add('category-has-children');
+            }
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = category.name;
+            li.appendChild(nameSpan);
+
+            // Загружаем дочерние категории и меняем состояние категории
+            li.addEventListener('click', function (e) {
+                e.stopPropagation();
+
+                if (li.classList.contains('category-expanded')) {
+                    li.classList.remove('category-expanded');
+                } else if (category.has_children) {
+                    loadCategoriesTree(category.id);
+                }
+            });
+
+            const childrenContainer = document.createElement('ul');
+            childrenContainer.className = 'category-children';
+            li.appendChild(childrenContainer);
+
+            return li;
+        }
+    });
+</script>
+</body>
+</html>

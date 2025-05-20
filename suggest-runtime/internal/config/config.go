@@ -18,6 +18,12 @@ type Config struct {
 	Redis struct {
 		Host string `json:"host"`
 	} `json:"redis"`
+
+	Artifact struct {
+		Queries           string `json:"queries"`
+		QueriesCategories string `json:"queries_categories"`
+		Nodes             string `json:"nodes"`
+	} `json:"artifact"`
 }
 
 func LoadConfig(path string) (*Config, error) {

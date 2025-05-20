@@ -29,8 +29,7 @@ type SearchRequest struct {
 // SuggestItem defines model for SuggestItem.
 type SuggestItem struct {
 	// CategoryId Category id for search engine
-	CategoryId *string          `json:"categoryId,omitempty"`
-	Icon       *SuggestItemIcon `json:"icon,omitempty"`
+	CategoryId *string `json:"categoryId,omitempty"`
 
 	// LocationId Location id for search engine
 	LocationId *string `json:"locationId,omitempty"`
@@ -40,15 +39,6 @@ type SuggestItem struct {
 
 	// Title Title visible for user
 	Title string `json:"title"`
-}
-
-// SuggestItemIcon defines model for SuggestItemIcon.
-type SuggestItemIcon struct {
-	Height int `json:"height"`
-
-	// Uri Image URI or image id for suggest item icon
-	Uri   string `json:"uri"`
-	Width int    `json:"width"`
 }
 
 // SuggestResponse defines model for SuggestResponse.

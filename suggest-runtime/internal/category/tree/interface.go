@@ -1,7 +1,10 @@
 package tree
 
-const RootNodeId = "1"
+const RootCategoryId = "1"
 
 type CategoryTree interface {
-	GetChildren(nodeId string) []*NodeInfo
+	Children(nodeId string) []*NodeInfo
+	Parents(nodeId string) []string
+	Parent(id string) *string
+	Depth(nodeId string) int
 }

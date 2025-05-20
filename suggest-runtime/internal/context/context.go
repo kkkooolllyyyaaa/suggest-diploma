@@ -6,23 +6,24 @@ import (
 	"time"
 
 	"suggest-runtime/internal/artifact"
+	"suggest-runtime/internal/category/stats"
 	categoryTree "suggest-runtime/internal/category/tree"
 	"suggest-runtime/internal/config"
-	"suggest-runtime/internal/history"
+	historyLogger "suggest-runtime/internal/history"
 	"suggest-runtime/internal/suggester"
-	history2 "suggest-runtime/internal/suggester/history"
+	"suggest-runtime/internal/suggester/history"
 	"suggest-runtime/internal/suggester/radixtrie"
 )
 
 type SuggestContext struct {
-	Config      *config.Config
-	Tree        categoryTree.CategoryTree
-	QueryLogger history.QueryLogger
-	Blender     suggester.SuggestBlender
-
-	indexItems       []*suggester.IndexItem
-	trieSuggester    suggester.Suggester
-	historySuggester suggester.Suggester
+	Config            *config.Config
+	Tree              categoryTree.CategoryTree
+	QueryLogger       historyLogger.QueryLogger
+	Blender           suggester.SuggestBlender
+	QueriesCategories stats.QueriesCategoriesDict
+	queries           []*suggester.IndexItem
+	trieSuggester     suggester.Suggester
+	historySuggester  suggester.Suggester
 }
 
 func InitContext(config *config.Config) *SuggestContext {
@@ -32,8 +33,9 @@ func InitContext(config *config.Config) *SuggestContext {
 
 	jobsPhases := []map[string]func(){
 		{
-			"index items":   sc.readIndexItems,
-			"category tree": sc.categoryTree,
+			"queries":            sc.readQueries,
+			"queries categories": sc.readQueriesCategories,
+			"category tree":      sc.categoryTree,
 		},
 		{
 			"trie": sc.trie,
@@ -67,29 +69,34 @@ func InitContext(config *config.Config) *SuggestContext {
 		sc.trieSuggester,
 		sc.historySuggester,
 	)
-	sc.indexItems = nil
+	sc.queries = nil
 
 	return sc
 }
 
-func (c *SuggestContext) readIndexItems() {
-	items, _ := artifact.ReadQueriesFromJson()
-	c.indexItems = items
+func (c *SuggestContext) readQueries() {
+	queries, _ := artifact.ReadQueriesFromJson(c.Config.Artifact.Queries)
+	c.queries = queries
+}
+
+func (c *SuggestContext) readQueriesCategories() {
+	queriesCategories, _ := artifact.ReadQueriesCategories(c.Config.Artifact.QueriesCategories)
+	c.QueriesCategories = queriesCategories
 }
 
 func (c *SuggestContext) trie() {
 	trieSuggester := radixtrie.NewTrieSuggester()
-	trieSuggester.Build(c.indexItems)
+	trieSuggester.Build(c.queries)
 	c.trieSuggester = trieSuggester
 }
 
 func (c *SuggestContext) categoryTree() {
-	nodes, _ := artifact.ReadNodesFromJson()
+	nodes, _ := artifact.ReadNodesFromJson(c.Config.Artifact.Nodes)
 	tree := categoryTree.NewCategoryTree(nodes)
 	c.Tree = tree
 }
 
 func (c *SuggestContext) history() {
-	c.QueryLogger = history.NewQueryLogger(c.Config.Redis.Host)
-	c.historySuggester = history2.NewHistorySuggester(c.QueryLogger)
+	c.QueryLogger = historyLogger.NewQueryLogger(c.Config.Redis.Host)
+	c.historySuggester = history.NewHistorySuggester(c.QueryLogger)
 }

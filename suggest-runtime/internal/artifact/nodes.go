@@ -8,8 +8,10 @@ import (
 	"suggest-runtime/internal/util/gzippedReader"
 )
 
-func ReadNodesFromJson() ([]*tree.NodeInfo, error) {
-	jsonFile, err := gzippedReader.NewGzippedJsonReader("data/nodes.json.gz")
+const nodesSliceCapacity = 3500
+
+func ReadNodesFromJson(filename string) ([]*tree.NodeInfo, error) {
+	jsonFile, err := gzippedReader.NewGzippedJsonReader(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -21,10 +23,10 @@ func ReadNodesFromJson() ([]*tree.NodeInfo, error) {
 		return nil, err
 	}
 	if startToken != json.Delim('[') {
-		return nil, fmt.Errorf("invalid json file")
+		return nil, fmt.Errorf("invalid json file %s", filename)
 	}
 
-	nodes := make([]*tree.NodeInfo, 0, 3500)
+	nodes := make([]*tree.NodeInfo, 0, nodesSliceCapacity)
 
 	for decoder.More() {
 		var info tree.NodeInfo
@@ -37,6 +39,8 @@ func ReadNodesFromJson() ([]*tree.NodeInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println(len(nodes))
 
 	return nodes, nil
 }

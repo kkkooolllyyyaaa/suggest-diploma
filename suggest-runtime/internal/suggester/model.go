@@ -10,3 +10,7 @@ type SearchRequest struct {
 	Query  string
 	UserId string
 }
+
+func Score(searches, contacts int64) int64 {
+	return searches + 10*contacts
+}

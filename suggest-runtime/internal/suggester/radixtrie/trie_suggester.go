@@ -44,7 +44,15 @@ func (s *Suggester) Suggest(request suggester.SearchRequest) []*suggester.IndexI
 	intersectedIndexes := s.intersectIndexes(lookupsResults)
 	actualResult := make([]*suggester.IndexItem, 0, len(intersectedIndexes))
 
+	uniqueQueries := map[string]bool{}
 	for _, index := range intersectedIndexes {
+		indexItem := s.suggests[index]
+		normQuery := string(indexItem.NormalizedQuery)
+		if uniqueQueries[normQuery] {
+			continue
+		}
+
+		uniqueQueries[normQuery] = true
 		actualResult = append(actualResult, s.suggests[index])
 	}
 

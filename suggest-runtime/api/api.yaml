@@ -135,26 +135,8 @@ components:
         locationId:
           description: Location id for search engine
           type: string
-        icon:
-          $ref: '#/components/schemas/SuggestItemIcon'
       required:
         - title
-
-    SuggestItemIcon:
-      type: object
-      properties:
-        width:
-          type: integer
-        height:
-          type: integer
-        uri:
-          description: Image URI or image id for suggest item icon
-          type: string
-      required:
-        - width
-        - height
-        - uri
-
 
     CategoryTreeNodesResponse:
       type: array

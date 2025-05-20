@@ -11,14 +11,16 @@ import (
 )
 
 type QueryInfo struct {
-	Freq        int64  `json:"freq"`
-	ContactFreq int64  `json:"contact_freq"`
-	BaseQuery   string `json:"query"`
-	RightQuery  string `json:"right_query"`
+	Searches   int64  `json:"searches"`
+	Contacts   int64  `json:"contacts"`
+	Query      string `json:"query"`
+	RightQuery string `json:"right_query"`
 }
 
-func ReadQueriesFromJson() ([]*suggester.IndexItem, error) {
-	jsonFile, err := gzippedReader.NewGzippedJsonReader("data/queries.json.gz")
+const queriesSliceCapacity = 3_500_000
+
+func ReadQueriesFromJson(filename string) ([]*suggester.IndexItem, error) {
+	jsonFile, err := gzippedReader.NewGzippedJsonReader(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -30,10 +32,10 @@ func ReadQueriesFromJson() ([]*suggester.IndexItem, error) {
 		return nil, err
 	}
 	if startToken != json.Delim('[') {
-		return nil, fmt.Errorf("invalid json file")
+		return nil, fmt.Errorf("invalid json file %s", filename)
 	}
 
-	queries := make([]*suggester.IndexItem, 0, 5_500_000)
+	queries := make([]*suggester.IndexItem, 0, queriesSliceCapacity)
 
 	for decoder.More() {
 		var info QueryInfo
@@ -41,9 +43,9 @@ func ReadQueriesFromJson() ([]*suggester.IndexItem, error) {
 			return nil, err
 		}
 		queries = append(queries, &suggester.IndexItem{
-			Query:           []rune(info.BaseQuery),
+			Query:           []rune(info.Query),
 			NormalizedQuery: []rune(info.RightQuery),
-			Score:           float64(info.Freq),
+			Score:           float64(suggester.Score(info.Searches, info.Contacts)),
 		})
 	}
 	_, err = decoder.Token()

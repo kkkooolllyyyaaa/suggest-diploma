@@ -12,7 +12,7 @@ func NewCategoryTree(infos []*NodeInfo) CategoryTree {
 	return &categoryTree
 }
 
-func (t *categoryTree) GetChildren(id string) []*NodeInfo {
+func (t *categoryTree) Children(id string) []*NodeInfo {
 	children, ok := t.children[id]
 	if !ok {
 		return nil
@@ -25,6 +25,37 @@ func (t *categoryTree) GetChildren(id string) []*NodeInfo {
 		result = append(result, got)
 	}
 	return result
+}
+
+func (t *categoryTree) Parents(id string) []string {
+	var parents []string
+	node, ok := t.nodesById[id]
+	if !ok {
+		return nil
+	}
+
+	parent := node.ParentId
+	for len(parent) > 0 {
+		parents = append(parents, parent)
+		parent = t.nodesById[parent].ParentId
+	}
+	return parents
+}
+
+func (t *categoryTree) Parent(id string) *string {
+	node, ok := t.nodesById[id]
+	if !ok {
+		return nil
+	}
+
+	if len(node.ParentId) > 0 {
+		return &node.ParentId
+	}
+	return nil
+}
+
+func (t *categoryTree) Depth(id string) int {
+	return len(t.Parents(id))
 }
 
 func (t *categoryTree) initTree(nodes []*NodeInfo) {

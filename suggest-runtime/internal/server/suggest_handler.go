@@ -53,12 +53,12 @@ func (h *Server) PostV1ApiSuggest(ctx echo.Context, params PostV1ApiSuggestParam
 }
 
 func (h *Server) GetV1ApiCategoryTree(ctx echo.Context, params GetV1ApiCategoryTreeParams) error {
-	root := tree.RootNodeId
+	root := tree.RootCategoryId
 	if params.Node != nil {
 		root = *params.Node
 	}
 
-	children := h.suggestContext.Tree.GetChildren(root)
+	children := h.suggestContext.Tree.Children(root)
 	treeNodes := make([]CategoryTreeNode, 0, len(children))
 	for _, node := range children {
 		treeNodes = append(treeNodes, CategoryTreeNode{

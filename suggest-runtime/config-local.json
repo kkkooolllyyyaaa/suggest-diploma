@@ -8,5 +8,10 @@
   },
   "redis": {
     "host": "localhost:6379"
+  },
+  "artifact": {
+    "queries": "data/queries.json.gz",
+    "queries_categories": "data/queries_categories_propagated.json.gz",
+    "nodes": "data/nodes.json.gz"
   }
 }

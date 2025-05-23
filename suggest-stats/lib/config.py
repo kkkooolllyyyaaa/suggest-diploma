@@ -37,6 +37,9 @@ class Artifacts:
     def queries_daily(self, date):
         return self.__build_path('process', 'queries', date, 'tsv' + self.suffix)
 
+    def queries_daily_with_score(self, date):
+        return self.__build_path('process', 'queries_with_score', date, 'tsv' + self.suffix)
+
     def queries_daily_raw(self, date):
         return self.__build_path('raw', 'queries', date, 'tsv' + self.suffix)
 
@@ -51,6 +54,9 @@ class Artifacts:
 
     def queries_categories_daily(self, date):
         return self.__build_path('process', 'queries_categories', date, 'tsv' + self.suffix)
+
+    def queries_categories_daily_with_score(self, date):
+        return self.__build_path('process', 'queries_categories_with_score', date, 'tsv' + self.suffix)
 
     def raw_data_folder(self):
         return os.path.join(self.root, 'raw')
@@ -82,7 +88,6 @@ LOCAL_ARTIFACTS = Artifacts(local_root, suffix='')
 
 class Config:
     def __init__(self):
-
         self.storage = StorageConfig()
         self.pipeline = PipelineConfig()
         self.nodes_path = 'data/nodes.json.gz'

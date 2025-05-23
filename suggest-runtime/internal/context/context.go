@@ -5,14 +5,16 @@ import (
 	"sync"
 	"time"
 
-	"suggest-runtime/internal/artifact"
+	"suggest-runtime/internal/artifact/s3"
 	"suggest-runtime/internal/category/stats"
 	categoryTree "suggest-runtime/internal/category/tree"
 	"suggest-runtime/internal/config"
 	historyLogger "suggest-runtime/internal/history"
 	"suggest-runtime/internal/suggester"
+	"suggest-runtime/internal/suggester/ann"
 	"suggest-runtime/internal/suggester/history"
 	"suggest-runtime/internal/suggester/radixtrie"
+	"suggest-runtime/internal/vector"
 )
 
 type SuggestContext struct {
@@ -21,9 +23,15 @@ type SuggestContext struct {
 	QueryLogger       historyLogger.QueryLogger
 	Blender           suggester.SuggestBlender
 	QueriesCategories stats.QueriesCategoriesDict
+	CatEngine         stats.CatEngine
+	S3                *s3.Minio
+	QueriesVectors    vector.QueriesVectors
+	TokensVectors     vector.TokensVectors
+	AnnIndex          vector.AnnIndex
 	queries           []*suggester.IndexItem
 	trieSuggester     suggester.Suggester
 	historySuggester  suggester.Suggester
+	annSuggester      suggester.Suggester
 }
 
 func InitContext(config *config.Config) *SuggestContext {
@@ -32,19 +40,26 @@ func InitContext(config *config.Config) *SuggestContext {
 	}
 
 	jobsPhases := []map[string]func(){
+		//{
+		//	"init s3": sc.initS3,
+		//},
+		//{
+		//	"remote artifacts": sc.readRemote,
+		//},
 		{
 			"queries":            sc.readQueries,
 			"queries categories": sc.readQueriesCategories,
-			"category tree":      sc.categoryTree,
+			"category tree":      sc.readCategoryTree,
 		},
 		{
-			"trie": sc.trie,
+			"suggesters": sc.suggesters,
 		},
 		{
-			"history": sc.history,
+			"category": sc.category,
 		},
 	}
 
+	startAll := time.Now()
 	for _, jobs := range jobsPhases {
 		wg := sync.WaitGroup{}
 		wg.Add(len(jobs))
@@ -64,39 +79,38 @@ func InitContext(config *config.Config) *SuggestContext {
 
 		wg.Wait()
 	}
+	fmt.Printf("Running all jobs took %.4f seconds\n", time.Now().Sub(startAll).Seconds())
 
 	sc.Blender = suggester.NewSuggestBlender(
 		sc.trieSuggester,
 		sc.historySuggester,
+		nil,
 	)
 	sc.queries = nil
 
 	return sc
 }
 
-func (c *SuggestContext) readQueries() {
-	queries, _ := artifact.ReadQueriesFromJson(c.Config.Artifact.Queries)
-	c.queries = queries
-}
-
-func (c *SuggestContext) readQueriesCategories() {
-	queriesCategories, _ := artifact.ReadQueriesCategories(c.Config.Artifact.QueriesCategories)
-	c.QueriesCategories = queriesCategories
-}
-
-func (c *SuggestContext) trie() {
+func (c *SuggestContext) suggesters() {
 	trieSuggester := radixtrie.NewTrieSuggester()
 	trieSuggester.Build(c.queries)
 	c.trieSuggester = trieSuggester
-}
 
-func (c *SuggestContext) categoryTree() {
-	nodes, _ := artifact.ReadNodesFromJson(c.Config.Artifact.Nodes)
-	tree := categoryTree.NewCategoryTree(nodes)
-	c.Tree = tree
-}
-
-func (c *SuggestContext) history() {
 	c.QueryLogger = historyLogger.NewQueryLogger(c.Config.Redis.Host)
 	c.historySuggester = history.NewHistorySuggester(c.QueryLogger)
+}
+
+func (c *SuggestContext) category() {
+	c.CatEngine = stats.NewCategoryEngine(
+		c.QueriesCategories,
+		stats.NewCategoryContactsAccessor(),
+		c.Config.CategoryEngine.Threshold,
+	)
+}
+
+func (c *SuggestContext) ann() {
+	c.AnnIndex = vector.NewIndex(c.Config, c.QueriesVectors, c.TokensVectors)
+	annSuggester := ann.NewAnnSuggester(c.AnnIndex)
+	annSuggester.Build(c.queries)
+	c.annSuggester = annSuggester
 }

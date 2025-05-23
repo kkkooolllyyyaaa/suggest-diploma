@@ -1,5 +1,14 @@
 import gzip
+import os
 import shutil
+
+
+def delete_file(file):
+    os.remove(file)
+
+
+def rename_file(old, new):
+    os.rename(old, new)
 
 
 def compress_to_gz(file):

@@ -1,7 +1,7 @@
 package stats
 
 type CatEngine interface {
-	Suggest(query string) []string
+	Suggest(query string) *string
 }
 
 type QueriesCategoriesDict map[string][]CatStats

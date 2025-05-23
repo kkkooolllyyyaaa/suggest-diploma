@@ -1,12 +1,10 @@
 import pymorphy2
 from pylru import lrucache
 
-morph = pymorphy2.MorphAnalyzer()
-
 
 class Morphology:
     def __init__(self):
-        self.__morph = morph
+        self.__morph = pymorphy2.MorphAnalyzer()
         self.__morph_cache = lrucache(30_000)
 
     def normalize_word(self, word: str) -> str:

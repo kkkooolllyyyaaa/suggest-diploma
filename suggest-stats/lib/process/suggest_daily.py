@@ -27,7 +27,6 @@ def process_daily_file(ctx: Context, date):
     sorted_rows = []
     with gzip.open(LOCAL_ARTIFACTS_GZ.queries_daily_raw(date), mode='rt', encoding='utf-8') as f_read:
         reader = csv.reader(f_read, delimiter='\t')
-        # sort_score = 10 * contacts + searches
         sorted_rows = sorted(map(
             lambda x: (x[0], int(x[1]), int(x[2]), x[3]),
             reader,
@@ -168,7 +167,7 @@ def process(ctx: Context):
         ctx.logger.info(f"Going to process {len(dates_to_process)} dates: {[str(x) for x in dates_to_process]}")
         process_raw_data(ctx, dates_to_process)
     else:
-        ctx.logger.info("Nothing to process")
+        ctx.logger.info("Got 0 days to process, skipping...")
 
 
 def upload_raw_data_to_storage(ctx: Context):

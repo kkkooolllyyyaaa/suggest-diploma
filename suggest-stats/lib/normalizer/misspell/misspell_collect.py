@@ -9,6 +9,9 @@ from lib.util.text import clean_phrase
 def gen_from_raw_data(process_row):
     for dir, _, files in os.walk('../../../data/storage/raw'):
         for file in files:
+            last2 = file[-2:]
+            if last2 != 'gz':
+                continue
             with gzip.open(dir + '/' + file, 'rt') as f:
                 print('Processing file', file)
                 reader = csv.reader(f, delimiter='\t')
@@ -51,5 +54,5 @@ def gen_train_data():
 
 
 if __name__ == '__main__':
-    gen_train_data()
+    # gen_train_data()
     gen_test_data()

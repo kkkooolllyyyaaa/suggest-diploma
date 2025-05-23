@@ -42,6 +42,14 @@ func (t *categoryTree) Parents(id string) []string {
 	return parents
 }
 
+func (t *categoryTree) Title(id string) string {
+	node, ok := t.nodesById[id]
+	if !ok {
+		return ""
+	}
+	return node.Title
+}
+
 func (t *categoryTree) Parent(id string) *string {
 	node, ok := t.nodesById[id]
 	if !ok {

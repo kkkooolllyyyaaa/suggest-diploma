@@ -31,6 +31,9 @@ type SuggestItem struct {
 	// CategoryId Category id for search engine
 	CategoryId *string `json:"categoryId,omitempty"`
 
+	// CategoryName Category name for search engine
+	CategoryName *string `json:"categoryName,omitempty"`
+
 	// LocationId Location id for search engine
 	LocationId *string `json:"locationId,omitempty"`
 

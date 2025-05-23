@@ -40,7 +40,5 @@ func ReadNodesFromJson(filename string) ([]*tree.NodeInfo, error) {
 		return nil, err
 	}
 
-	fmt.Println(len(nodes))
-
 	return nodes, nil
 }

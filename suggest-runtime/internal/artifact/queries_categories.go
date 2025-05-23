@@ -48,6 +48,5 @@ func ReadQueriesCategories(filename string) (stats.QueriesCategoriesDict, error)
 		return nil, err
 	}
 
-	fmt.Println(len(queriesCategories))
 	return queriesCategories, nil
 }

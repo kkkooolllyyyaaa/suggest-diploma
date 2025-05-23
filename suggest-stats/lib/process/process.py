@@ -4,9 +4,9 @@ from collections import OrderedDict
 
 from lib.nodes.tree import NodesTree, ROOT_ID
 
-MIN_CAT_SCORE = 2
-MIN_QUERY_CATEGORIES_SCORE = 22
-ROUND_DIGITS = 4
+MIN_CAT_SCORE = 4
+MIN_QUERY_CATEGORIES_SCORE = 80
+ROUND_DIGITS = 3
 
 
 class QueriesCategoriesInfo:
@@ -42,6 +42,17 @@ class QueryCategories:
             self.nodes[node_id] = QueryCategories.NodeFreqs(0, 0)
         self.nodes[node_id].searches += searches
         self.nodes[node_id].contacts += contacts
+
+    def filter_small_nodes(self):
+        new_dict = OrderedDict()
+        sum_score = 0
+        for node, stats in self.nodes.items():
+            score = stats.score()
+            if score >= MIN_CAT_SCORE:
+                new_dict[node] = stats
+                sum_score += score
+        self.nodes = new_dict
+        return sum_score
 
     def sort_by_score(self, tree: NodesTree):
         ordered_nodes = sorted(
@@ -140,9 +151,6 @@ class QueriesCategoriesEncoder(json.JSONEncoder):
             return {
                 q: self.default(node_stats)
                 for q, node_stats in obj.queries_categories.items()
-                if any(True for _, stats in node_stats.nodes.items() if stats.score() >= MIN_CAT_SCORE) and
-                   sum(stats.score() for _, stats in node_stats.nodes.items() if
-                       stats.score() >= MIN_CAT_SCORE) >= MIN_QUERY_CATEGORIES_SCORE
             }
         elif isinstance(obj, QueryCategories):
             has_not_features = any(True for _, stats in obj.nodes.items() if stats.features is None)
@@ -153,7 +161,7 @@ class QueriesCategoriesEncoder(json.JSONEncoder):
                         'total_searches': stats.searches,
                         'total_contacts': stats.contacts,
                     }
-                    for node_id, stats in obj.nodes.items() if stats.score() >= MIN_CAT_SCORE and node_id != ROOT_ID
+                    for node_id, stats in obj.nodes.items() if node_id != ROOT_ID
                 ]
 
             return [
@@ -172,10 +180,10 @@ class QueriesCategoriesEncoder(json.JSONEncoder):
                     'node_score': stats.features.node_score,
                     'node_score_rate': round(stats.features.node_score_rate, ROUND_DIGITS),
                 }
-                for node_id, stats in obj.nodes.items() if stats.score() >= MIN_CAT_SCORE and node_id != ROOT_ID
+                for node_id, stats in obj.nodes.items() if node_id != ROOT_ID
             ]
         return super().default(obj)
 
 
 def query_score(searches, contacts):
-    return searches + 10 * contacts
+    return searches + 15 * contacts

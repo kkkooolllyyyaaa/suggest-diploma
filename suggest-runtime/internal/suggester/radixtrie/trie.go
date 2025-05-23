@@ -4,7 +4,6 @@ import (
 	"suggest-runtime/internal/suggester"
 )
 
-const maxIndexSize = 500_000
 const initialCapacity = 1_000_000
 
 type Node struct {

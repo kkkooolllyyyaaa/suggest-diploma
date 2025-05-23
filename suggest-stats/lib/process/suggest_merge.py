@@ -8,9 +8,9 @@ import typing as T
 
 from lib import context
 from lib.config import LOCAL_ARTIFACTS_GZ, LOCAL_ARTIFACTS
-from lib.process.process import query_score, QueriesCategoriesInfo, QueriesCategoriesEncoder
+from lib.process.process import query_score, QueriesCategoriesInfo, QueriesCategoriesEncoder, MIN_QUERY_CATEGORIES_SCORE
 from lib.util.collections import EffectiveList
-from lib.util.file import decompress_from_gz
+from lib.util.file import decompress_from_gz, delete_file, rename_file
 
 MAX_QUERY_LEN = 100
 MIN_QUERY_SCORE = 12
@@ -35,35 +35,41 @@ def merge_queries(ctx: context.Context, dates_to_process):
     prev_normalized_q = ''
     sum_searches = 0
     sum_contacts = 0
+    sum_weighted_score = 0
     glued_cnt = 0
+
     with open(glued_filename, 'r', encoding='utf-8') as f_read:
         reader = csv.reader(f_read, delimiter='\t')
         for row in reader:
-            if len(row) != 4:
+            if len(row) != 5:
                 continue
             glued_cnt += 1
 
-            q, normalized_q, searches, contacts = row
+            q, normalized_q, searches, contacts, weighted_score = row
             if len(q) > MAX_QUERY_LEN:
                 continue
 
             searches = int(searches)
             contacts = int(contacts)
+            weighted_score = float(weighted_score)
 
             if q != prev_q:
                 if query_score(sum_searches, sum_contacts) > 0:
-                    aggregated_rows.append([prev_q, prev_normalized_q, sum_searches, sum_contacts])
+                    aggregated_rows.append([prev_q, prev_normalized_q, sum_searches, sum_contacts, sum_weighted_score])
 
                 prev_q = q
                 prev_normalized_q = normalized_q
                 sum_searches = searches
                 sum_contacts = contacts
+                sum_weighted_score = weighted_score
             else:
                 sum_searches += searches
                 sum_contacts += contacts
+                sum_weighted_score += weighted_score
 
         if query_score(sum_searches, sum_contacts) > 0:
-            aggregated_rows.append([prev_q, prev_normalized_q, sum_searches, sum_contacts])
+            row_to_write = [prev_q, prev_normalized_q, sum_searches, sum_contacts, round(sum_weighted_score, 4)]
+            aggregated_rows.append(row_to_write)
 
     aggregated_rows = aggregated_rows.get()
     ctx.logger.info(f'Got {len(aggregated_rows)} unique queries from {glued_cnt} glued after merging')
@@ -71,7 +77,7 @@ def merge_queries(ctx: context.Context, dates_to_process):
     ctx.logger.info(f'Getting most score query for normalization')
     grouped_by_normalized_form = sorted(
         aggregated_rows,
-        key=lambda row: (row[1], query_score(row[2], row[3])),
+        key=lambda row: (row[1], row[4]),
         reverse=True,
     )
 
@@ -79,10 +85,10 @@ def merge_queries(ctx: context.Context, dates_to_process):
     prev_normalized_q = ''
     most_score_q = ''
     max_score = 0
-    for q, normalized_q, searches, contacts in grouped_by_normalized_form:
+    for q, normalized_q, searches, contacts, weighted_score in grouped_by_normalized_form:
         if prev_normalized_q != normalized_q:
             most_score_q = ctx.normalizer.soft_normalize(q)
-            max_score = query_score(searches, contacts)
+            max_score = weighted_score
 
         if max_score > MIN_QUERY_SCORE:
             result_to_dump.append(
@@ -91,6 +97,7 @@ def merge_queries(ctx: context.Context, dates_to_process):
                     'right_query': most_score_q,
                     'searches': searches,
                     'contacts': contacts,
+                    'score': weighted_score,
                 }
             )
         prev_normalized_q = normalized_q
@@ -125,6 +132,16 @@ def merge_queries_categories(ctx: context.Context, dates_to_process):
             result.add(q, category, searches, contacts)
 
     ctx.logger.info(f'Got {len(result.queries_categories)} unique queries from {glued_cnt} queries categories rows')
+
+    queries_to_remove = set()
+    for q, stats in result.queries_categories.items():
+        total_score = stats.filter_small_nodes()
+        if total_score < MIN_QUERY_CATEGORIES_SCORE:
+            queries_to_remove.add(q)
+
+    for q in queries_to_remove:
+        del result.queries_categories[q]
+    ctx.logger.info(f'Got {len(result.queries_categories)} unique queries from after filtering')
 
     ctx.logger.info(f'Dumping queries categories to file')
     with gzip.open(LOCAL_ARTIFACTS_GZ.queries_categories(), mode='wt', encoding='utf-8') as f_write:
@@ -165,6 +182,27 @@ def process(ctx: context.Context):
             ctx.logger.info(f'Decompressing queries categories file for date {str(date)}')
             decompress_from_gz(LOCAL_ARTIFACTS_GZ.queries_categories_daily(date))
 
+    # add weighted score to queries files
+    max_date = max(dates_to_process)
+    for date in dates_to_process:
+        offset = (max_date - date).days + 1
+        weight = 3.5 / (1 + 0.205 * offset)
+
+        ctx.logger.info(f'Calculating weighted queries score for day {date}')
+        from_filename = LOCAL_ARTIFACTS.queries_daily(date)
+        to_filename = LOCAL_ARTIFACTS.queries_daily_with_score(date)
+        with open(from_filename, mode='r') as f_read, open(to_filename, mode='w') as f_write:
+            reader = csv.reader(f_read, delimiter='\t')
+            writer = csv.writer(f_write, delimiter='\t')
+            for row in reader:
+                if len(row) not in {4, 5}:
+                    continue
+                weighted_score = query_score(int(row[2]), int(row[3])) * weight
+                writer.writerow([row[0], row[1], row[2], row[3], weighted_score])
+
+        delete_file(from_filename)
+        rename_file(to_filename, from_filename)
+
     def queries_worker():
         ctx.logger.info("Merging queries...")
         merge_queries(ctx, dates_to_process)
@@ -183,7 +221,6 @@ def process(ctx: context.Context):
     p2 = multiprocessing.Process(target=queries_categories_worker)
     p2.start()
 
-    ctx.logger.info("Awaiting merge processes")
     p1.join()
     p2.join()
     ctx.logger.info("merge processes done")

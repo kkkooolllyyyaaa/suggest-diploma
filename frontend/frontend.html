@@ -221,10 +221,6 @@
         // Получение поисковых подсказок при вводе в поисковую строку
         searchInput.addEventListener('input', function (e) {
             const query = e.target.value.trimStart();
-            // if (query.length === 0) {
-            //     hideSuggest()
-            //     return
-            // }
             fetchSuggestions(e.target.value);
         });
 
@@ -260,7 +256,7 @@
                 });
         }
 
-        function highlightSuggestion(query, suggestion) {
+        function highlightSuggestion(query, suggestion, suffix) {
             function escapeRegExp(string) {
                 return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             }
@@ -276,7 +272,7 @@
                 highlightedResult = highlightedResult.replace(regex, '<span class="highlight">$1</span>');
             });
 
-            return highlightedResult;
+            return highlightedResult + suffix;
         }
 
         function displaySuggestions(items, query) {
@@ -294,8 +290,14 @@
                 const queryLower = query.toLowerCase();
                 const titleLower = item.title.toLowerCase();
 
+                // Добавление суффикса с категорией
+                let suffix = ''
+                if (item.categoryName != null) {
+                    suffix += ' <- ' + item.categoryName
+                }
+
                 const text = document.createElement('div');
-                text.innerHTML = highlightSuggestion(queryLower, titleLower)
+                text.innerHTML = highlightSuggestion(queryLower, titleLower, suffix)
                 suggestionItem.appendChild(text);
 
                 suggestionItem.dataset.titleLower = titleLower;

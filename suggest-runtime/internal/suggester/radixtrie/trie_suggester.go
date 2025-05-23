@@ -1,24 +1,27 @@
 package radixtrie
 
 import (
+	"cmp"
 	"slices"
 	"strings"
 
 	"suggest-runtime/internal/suggester"
 )
 
-type Suggester struct {
+const maxIntersected = 100
+
+type trieSuggester struct {
 	suggests []*suggester.IndexItem
 	trie     *Trie
 }
 
 func NewTrieSuggester() suggester.Suggester {
-	return &Suggester{
+	return &trieSuggester{
 		trie: NewTrie(),
 	}
 }
 
-func (s *Suggester) Build(collection []*suggester.IndexItem) {
+func (s *trieSuggester) Build(collection []*suggester.IndexItem) {
 	for _, item := range collection {
 		s.trie.Put(item)
 	}
@@ -26,7 +29,7 @@ func (s *Suggester) Build(collection []*suggester.IndexItem) {
 	s.suggests = collection
 }
 
-func (s *Suggester) Suggest(request suggester.SearchRequest) []*suggester.IndexItem {
+func (s *trieSuggester) Suggest(request suggester.SearchRequest) []*suggester.IndexItem {
 	if len(request.Query) == 0 {
 		return nil
 	}
@@ -44,23 +47,23 @@ func (s *Suggester) Suggest(request suggester.SearchRequest) []*suggester.IndexI
 	intersectedIndexes := s.intersectIndexes(lookupsResults)
 	actualResult := make([]*suggester.IndexItem, 0, len(intersectedIndexes))
 
-	uniqueQueries := map[string]bool{}
+	uniqueQueriesIdx := map[string]int{}
 	for _, index := range intersectedIndexes {
 		indexItem := s.suggests[index]
 		normQuery := string(indexItem.NormalizedQuery)
-		if uniqueQueries[normQuery] {
+		if idx, ok := uniqueQueriesIdx[normQuery]; ok {
+			if actualResult[idx].Score < indexItem.Score {
+				actualResult[idx] = indexItem
+			}
 			continue
 		}
 
-		uniqueQueries[normQuery] = true
+		uniqueQueriesIdx[normQuery] = len(actualResult)
 		actualResult = append(actualResult, s.suggests[index])
 	}
 
 	slices.SortFunc(actualResult, func(a, b *suggester.IndexItem) int {
-		if (b.Score - a.Score) >= 0.0 {
-			return 1
-		}
-		return -1
+		return cmp.Compare(b.Score, a.Score)
 	})
 
 	if len(actualResult) > suggester.SuggestLimit {
@@ -69,9 +72,15 @@ func (s *Suggester) Suggest(request suggester.SearchRequest) []*suggester.IndexI
 	return actualResult
 }
 
-func (s *Suggester) intersectIndexes(results []*Node) []int {
+func (s *trieSuggester) intersectIndexes(results []*Node) []int {
 	if len(results) == 0 {
 		return nil
+	} else if len(results) == 1 {
+		toReturn := results[0].Index
+		if len(toReturn) > maxIntersected {
+			toReturn = toReturn[:maxIntersected]
+		}
+		return toReturn
 	}
 
 	maps := make([]map[int]struct{}, 0, len(results))
@@ -97,6 +106,9 @@ func (s *Suggester) intersectIndexes(results []*Node) []int {
 
 		if containsAll {
 			intersected = append(intersected, toCheck)
+			if len(intersected) == maxIntersected {
+				break
+			}
 		}
 	}
 	return intersected

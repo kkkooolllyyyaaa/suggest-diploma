@@ -12,6 +12,32 @@
   "artifact": {
     "queries": "data/queries.json.gz",
     "queries_categories": "data/queries_categories_propagated.json.gz",
-    "nodes": "data/nodes.json.gz"
+    "nodes": "data/nodes.json.gz",
+    "queries_vectors": "data/query_vectors.json.gz",
+    "tokens_vectors": "data/tokens_vectors.json.gz",
+    "annoy": "data/annoy_index.ann"
+  },
+  "artifact_remote": {
+    "queries": "artifact/queries.json.gz",
+    "queries_categories": "artifact/queries_categories_propagated.json.gz",
+    "nodes": "artifact/nodes.json.gz",
+    "queries_vectors": "vector/query_vectors.json.gz",
+    "tokens_vectors": "vector/tokens_vectors.json.gz",
+    "annoy": "vector/annoy_index.ann"
+  },
+  "category_engine": {
+    "threshold": 0.75
+  },
+  "s3": {
+    "endpoint": "localhost:9000",
+    "access_key": "minioadmin",
+    "secret_key": "minioadmin",
+    "bucket_name": "suggest",
+    "use_ssl": false
+  },
+  "vector": {
+    "dim": 128,
+    "count": 50,
+    "min_dist": 0.5
   }
 }

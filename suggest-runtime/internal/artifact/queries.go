@@ -11,10 +11,11 @@ import (
 )
 
 type QueryInfo struct {
-	Searches   int64  `json:"searches"`
-	Contacts   int64  `json:"contacts"`
-	Query      string `json:"query"`
-	RightQuery string `json:"right_query"`
+	Searches   int64   `json:"searches"`
+	Contacts   int64   `json:"contacts"`
+	Query      string  `json:"query"`
+	RightQuery string  `json:"right_query"`
+	Score      float64 `json:"score"`
 }
 
 const queriesSliceCapacity = 3_500_000
@@ -45,7 +46,7 @@ func ReadQueriesFromJson(filename string) ([]*suggester.IndexItem, error) {
 		queries = append(queries, &suggester.IndexItem{
 			Query:           []rune(info.Query),
 			NormalizedQuery: []rune(info.RightQuery),
-			Score:           float64(suggester.Score(info.Searches, info.Contacts)),
+			Score:           info.Score,
 		})
 	}
 	_, err = decoder.Token()

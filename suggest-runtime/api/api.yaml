@@ -132,6 +132,9 @@ components:
         categoryId:
           description: Category id for search engine
           type: string
+        categoryName:
+          description: Category name for search engine
+          type: string
         locationId:
           description: Location id for search engine
           type: string
